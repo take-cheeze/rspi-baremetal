@@ -1,0 +1,9 @@
+[package]
+name = "rspi-baremetal"
+version = "0.1.0"
+authors = ["k-masatany <masatani@fusic.co.jp>"]
+
+[lib]
+crate-type=["staticlib"]
+
+[dependencies]
