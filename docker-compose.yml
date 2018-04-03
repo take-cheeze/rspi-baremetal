@@ -3,6 +3,8 @@ version: '3'
 services:
   qemu:
     build: .
+    working_dir: /root/project
     volumes:
-      - .:/root
-    command: qemu-system-arm -M raspi2 -kernel build/arm/kernel.elf -serial stdio
+      - .:/root/project
+    command: |
+      sh -c "PATH=$$PATH:$$HOME/.cargo/bin make && qemu-system-arm -M raspi2 -kernel build/arm/kernel.elf -vnc :0 -serial stdio"
