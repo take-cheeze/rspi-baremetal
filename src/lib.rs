@@ -93,26 +93,6 @@ pub extern "C" fn main() {
     }
 }
 
-#[no_mangle]
-pub extern "C" fn _sbrk() -> isize {
-    return -1;
-}
-#[no_mangle]
-pub extern "C" fn _exit() -> isize {
-    return -1;
-}
-#[no_mangle]
-pub extern "C" fn _kill() -> isize {
-    return -1;
-}
-#[no_mangle]
-pub extern "C" fn _getpid() -> isize {
-    return -1;
-}
-
-#[lang = "eh_personality"]
-extern "C" fn eh_personality() {}
-
 #[lang = "panic_fmt"]
 extern "C" fn panic_fmt() -> ! {
     loop {}
