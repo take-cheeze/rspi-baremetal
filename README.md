@@ -1,5 +1,5 @@
 I'm using https://github.com/KeenS/RaspPi as reference.
 
-```
-make
+```bash
+docker-compose run qemu
 ```
