@@ -52,39 +52,23 @@ pub extern "C" fn _start() {
 
 #[no_mangle]
 pub extern "C" fn main() {
-    use gpio::*;
-
     write("Hello Rust Kernel world!");
 
     loop {
         writec(getc())
     }
 
-    let gpio = GPIO_BASE as *const u32;
-    let init = unsafe { gpio.offset(LED_GPFSEL) as *mut u32 };
-    let led_on = unsafe { gpio.offset(LED_GPSET) as *mut u32 };
-    let led_off = unsafe { gpio.offset(LED_GPCLR) as *mut u32 };
+    gpio::init_led();
 
-    unsafe {
-        volatile_store(init, *(init) | 1 << LED_GPFBIT);
-    }
-
-    unsafe {
-        volatile_store(led_on, 1 << LED_GPIO_BIT);
-    }
     loop {
-        unsafe {
-            volatile_store(led_off, 1 << LED_GPIO_BIT);
-        }
+        gpio::led_off();
         for _ in 1..500000 {
             unsafe {
                 asm!("");
             }
         }
 
-        unsafe {
-            volatile_store(led_on, 1 << LED_GPIO_BIT);
-        }
+        gpio::led_on();
         for _ in 1..500000 {
             unsafe {
                 asm!("");

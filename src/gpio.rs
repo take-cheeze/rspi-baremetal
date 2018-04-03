@@ -45,3 +45,30 @@ pub const GPIO_GPAFEN1: isize = 35;
 pub const GPIO_GPPUD: isize = 37;
 pub const GPIO_GPPUDCLK0: isize = 38;
 pub const GPIO_GPPUDCLK1: isize = 39;
+
+use core::intrinsics::volatile_store;
+
+pub fn init_led() {
+    unsafe {
+        let init = (GPIO_BASE as *const u32).offset(LED_GPFSEL) as *mut u32;
+        volatile_store(init, *(init) | 1 << LED_GPFBIT);
+    }
+}
+
+pub fn led_on() {
+    unsafe {
+        volatile_store(
+            (GPIO_BASE as *const u32).offset(LED_GPSET) as *mut u32,
+            1 << LED_GPIO_BIT,
+        );
+    }
+}
+
+pub fn led_off() {
+    unsafe {
+        volatile_store(
+            (GPIO_BASE as *const u32).offset(LED_GPCLR) as *mut u32,
+            1 << LED_GPIO_BIT,
+        );
+    }
+}
