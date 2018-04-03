@@ -7,3 +7,6 @@ authors = ["k-masatany <masatani@fusic.co.jp>"]
 crate-type=["staticlib"]
 
 [dependencies]
+
+[profile.dev]
+panic = "abort"
