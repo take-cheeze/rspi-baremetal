@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  qemu:
+    build: .
+    volumes:
+      - .:/root
+    command: qemu-system-arm -M raspi2 -kernel build/arm/kernel.elf -serial stdio

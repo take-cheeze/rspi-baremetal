@@ -20,5 +20,5 @@ $(kernel): $(rust_lib)
 	@$(xcc) -O2 -mfpu=vfp -mfloat-abi=hard -march=armv6zk -mtune=arm1176jzf-s -nostartfiles $(rust_lib) -o $(build_dir)/kernel.elf
 	@$(xobjcopy) $(build_dir)/kernel.elf -O binary $(kernel)
 
-$(rust_lib):
+$(rust_lib): src/lib.rs src/gpio.rs
 	@cargo rustc --target $(target) -- --emit=obj -O
