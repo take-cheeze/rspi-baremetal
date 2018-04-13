@@ -14,7 +14,6 @@ all: $(kernel)
 clean:
 	@rm -r build
 
-
 $(kernel): $(rust_lib)
 	@mkdir -p $(build_dir)
 	$(xcc) -O2 -mfpu=vfp -mfloat-abi=hard -march=armv6zk -mtune=arm1176jzf-s -nostdlib -nostartfiles $(rust_lib) -o $(build_dir)/kernel.elf

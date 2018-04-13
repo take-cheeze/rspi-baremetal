@@ -4,15 +4,12 @@
 // hardware.
 const MMIO_BASE: u32 = 0x3F000000;
 
-use core::intrinsics::volatile_load;
-use core::intrinsics::volatile_store;
-
 unsafe fn mmio_write(reg: u32, val: u32) {
-    volatile_store(reg as *mut u32, val)
+    ::core::ptr::write_volatile(reg as *mut u32, val)
 }
 
 unsafe fn mmio_read(reg: u32) -> u32 {
-    volatile_load(reg as *const u32)
+    ::core::ptr::read_volatile(reg as *const u32)
 }
 
 const UART0_DR: u32 = MMIO_BASE + 0x00201000;
@@ -81,18 +78,20 @@ const GPPUDCLK0: u32 = MMIO_BASE + 0x00200098;
 
 unsafe fn mbox_call(ch: u8) -> bool {
     /* wait until we can write to the mailbox */
-    while (mmio_read(MBOX_STATUS) & MBOX_FULL) != 0 {
+    while (mmio_read(MBOX_STATUS) & MBOX_FULL) > 0 {
         asm!("nop")
     }
+
     /* write the address of our message to the mailbox with channel identifier */
     mmio_write(
         MBOX_WRITE,
         (((&MBOX as *const MBox as u32) & !0xF) | ((ch & 0xF) as u32)) as u32,
     );
+
     /* now wait for the response */
     loop {
         /* is there a response? */
-        while (mmio_read(MBOX_STATUS) & MBOX_EMPTY) != 0 {
+        while (mmio_read(MBOX_STATUS) & MBOX_EMPTY) > 0 {
             asm!("nop");
         }
         let r = mmio_read(MBOX_READ);
@@ -109,11 +108,12 @@ impl Uart {
      * Set baud rate and characteristics (115200 8N1) and map to GPIO
      */
     pub fn new() -> Uart {
+        // return Uart{};
         unsafe {
             /* initialize UART */
             mmio_write(UART0_CR, 0); // turn off UART0
 
-            /* set up clock for consistent divisor values */
+            // set up clock for consistent divisor values
             let mut m = MBOX.mbox;
             m[0] = 8 * 4;
             m[1] = MBOX_REQUEST;
@@ -125,20 +125,18 @@ impl Uart {
             m[7] = MBOX_TAG_LAST;
             mbox_call(MBOX_CH_PROP);
 
-            /* map UART0 to GPIO pins */
+          /*
+            // map UART0 to GPIO pins
             let mut r = mmio_read(GPFSEL1);
             r &= !((7 << 12) | (7 << 15)); // gpio14, gpio15
             r |= (4 << 12) | (4 << 15); // alt0
             mmio_write(GPFSEL1, r);
             mmio_write(GPPUD, 0); // enable pins 14 and 15
-            for _ in 0..150 {
-                asm!("nop")
-            }
+            for _ in 0..150 { asm!("nop") }
             mmio_write(GPPUDCLK0, (1 << 14) | (1 << 15));
-            for _ in 0..150 {
-                asm!("nop")
-            }
+            for _ in 0..150 { asm!("nop") }
             mmio_write(GPPUDCLK0, 0); // flush GPIO setup
+*/
 
             mmio_write(UART0_ICR, 0x7FF); // clear interrupts
             mmio_write(UART0_IBRD, 2); // 115200 baud
@@ -156,29 +154,34 @@ impl Uart {
     pub fn send(&self, c: u32) {
         unsafe {
             /* wait until we can send */
-            while (mmio_read(UART0_FR) & 0x20) != 0 {
+            while (mmio_read(UART0_FR) & (1 << 5)) > 0 {
                 asm!("nop")
             }
+
+          // convert newline to carrige return + newline
             /* write the character to the buffer */
-            mmio_write(UART0_DR, c);
+          mmio_write(UART0_DR, match c as u8 as char {
+            '\n' => '\r' as u32,
+            _ => c as u32
+          });
         }
     }
 
     /**
      * Receive a character
      */
-    pub fn getc(&self) -> u8 {
+    pub fn getc(&self) -> char {
         unsafe {
             /* wait until something is in the buffer */
-            while (mmio_read(UART0_FR) & 0x10) != 0 {
+            while (mmio_read(UART0_FR) & (1 << 4)) > 0 {
                 asm!("nop")
             }
             /* read it and return */
             let r = mmio_read(UART0_DR) as u8;
             /* convert carrige return to newline */
             match r as char {
-                '\r' => '\n' as u8,
-                _ => r,
+                '\r' => '\n',
+                c => c,
             }
         }
     }
@@ -187,11 +190,7 @@ impl Uart {
      * Display a string
      */
     pub fn puts(&self, s: &str) {
-        for c in s.bytes() {
-            /* convert newline to carrige return + newline */
-            if c == ('\n' as u8) {
-                self.send('\r' as u32)
-            }
+        for c in s.chars() {
             self.send(c as u32)
         }
     }
